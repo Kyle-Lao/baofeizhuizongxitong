@@ -8,26 +8,49 @@ SHEET_NAME = "Premium_Tracking"
 WORKSHEET_NAME = "Policies"
 SCOPES = [
     "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",  # Required to open by title
+    "https://www.googleapis.com/auth/drive",  # needed to open by title
 ]
-CREDS_FILE = "credentials.json"  # Path relative to where you run the app
+CREDS_FILE = "credentials.json"  # local/dev fallback
 
 HEADERS = [
     "insured_name",        # col 1
     "policy_number",       # col 2
     "carrier",             # col 3
-    "premium_mode",        # col 4 (kept for compatibility with UI)
+    "premium_mode",        # col 4 (UI display only)
     "premium_schedule",    # col 5 (JSON string of 12 monthly amounts)
     "wire_reference",      # col 6
     "wiring_instructions", # col 7
     "is_tracking",         # col 8 ("1"/"0")
     "created_at",          # col 9 (UTC ISO)
-    "due_day"              # col 10 (1..28 recommended)
+    "due_day",             # col 10 (1..28 recommended)
 ]
 # ==================
 
 
 def _client():
+    """
+    Authorize gspread. On Streamlit Cloud, use st.secrets; locally, use credentials.json.
+    Supports two secret formats:
+      - st.secrets["gcp_service_account"]  (TOML object with the key fields)
+      - st.secrets["GOOGLE_CREDENTIALS_JSON"]  (raw JSON string)
+    """
+    try:
+        import streamlit as st  # available on Streamlit Cloud
+        # Preferred: TOML object under [gcp_service_account]
+        if "gcp_service_account" in st.secrets:
+            sa_info = dict(st.secrets["gcp_service_account"])
+            creds = Credentials.from_service_account_info(sa_info, scopes=SCOPES)
+            return gspread.authorize(creds)
+        # Fallback: single JSON string secret
+        if "GOOGLE_CREDENTIALS_JSON" in st.secrets:
+            _json = __import__("json")
+            sa_info = _json.loads(st.secrets["GOOGLE_CREDENTIALS_JSON"])
+            creds = Credentials.from_service_account_info(sa_info, scopes=SCOPES)
+            return gspread.authorize(creds)
+    except Exception:
+        # Streamlit not installed or secrets not set: fall back to file
+        pass
+
     creds = Credentials.from_service_account_file(CREDS_FILE, scopes=SCOPES)
     return gspread.authorize(creds)
 
@@ -36,11 +59,8 @@ def _worksheet():
     client = _client()
     sheet = client.open(SHEET_NAME)
     ws = sheet.worksheet(WORKSHEET_NAME)
-    # Bootstrap/repair header row (idempotent; no API version issues)
-    values = ws.get_all_values()
-    # Write headers into row 1 always (safe even if row 1 already has headers)
-    ws.update(f"A1:J1", [HEADERS])
-    # If sheet was empty before, ensure row 1 exists now (update created it)
+    # Idempotent header bootstrap/repair (safe even if row 1 already exists)
+    ws.update("A1:J1", [HEADERS])
     return ws
 
 
