@@ -1,0 +1,36 @@
+name: premium-notifier
+
+on:
+  schedule:
+    # 13:00 UTC ≈ 9:00 AM New York during DST (summer).
+    # In winter (EST), change to 14:00 UTC if you want exactly 9:00 local.
+    - cron: '0 13 * * *'
+  workflow_dispatch: {}  # lets you run it manually from Actions tab
+
+jobs:
+  run-notifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Write Google credentials.json from secret
+        run: |
+          cat > credentials.json <<'JSON'
+          ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          JSON
+
+      - name: Run 7-day reminder notifier
+        env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENTS: ${{ secrets.EMAIL_RECIPIENTS }}
+        run: python notifier.py
