@@ -91,10 +91,15 @@ with st.sidebar.form("add_policy_form", clear_on_submit=False):
     carrier = st.text_input("Carrier")
     due_day = st.number_input("Due Day (1–28 recommended)", min_value=1, max_value=31, value=15, step=1)
 
-    st.write("**Monthly Premiums for the next 12 months (starting this month)**")
+    # === Option A: show month-name labels ===
+    st.write("**Monthly Premiums (starting from the current month)**")
+    start = date.today().replace(day=1)
+    labels = [(start + relativedelta(months=i)).strftime("%b %Y") for i in range(12)]
+
     paste_mode = st.checkbox("Paste comma-separated amounts instead", value=False)
 
     if paste_mode:
+        st.caption("Order: " + " → ".join(labels))
         pasted = st.text_area(
             "Comma-separated (12 values). Example: 100,0,0,100,0,0,100,0,0,100,0,0",
             value="",
@@ -109,9 +114,9 @@ with st.sidebar.form("add_policy_form", clear_on_submit=False):
     else:
         cols = st.columns(3)
         schedule = []
-        for i in range(12):
+        for i, label in enumerate(labels):
             with cols[i % 3]:
-                amt = st.number_input(f"Month {i+1}", min_value=0.0, step=1.0, key=f"m{i+1}")
+                amt = st.number_input(label, min_value=0.0, step=1.0, key=f"m{i+1}")
                 schedule.append(amt)
 
     wire_reference = st.text_input("Wire Reference")
@@ -136,7 +141,7 @@ with st.sidebar.form("add_policy_form", clear_on_submit=False):
 
 
 # ===== Main: Tracked Policies =====
-st.title("Interim Premium Tracker")
+st.title("Premium Tracker (Google Sheets)")
 policies = get_policies()
 
 if not policies:
@@ -152,6 +157,9 @@ else:
 with st.expander("Notes"):
     st.markdown(
         """
+- The schedule represents **12 months starting from the current month** and is labeled by month.
+- For reliability across different month lengths, the app uses true month arithmetic for due dates.
+- Recommended **Due Day** is 1–28.
 - Reminder dates are shown at **7 days prior** to the next due date.
 """
     )
