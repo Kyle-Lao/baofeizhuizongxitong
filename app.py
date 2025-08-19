@@ -141,7 +141,7 @@ with st.sidebar.form("add_policy_form", clear_on_submit=False):
 
 
 # ===== Main: Tracked Policies =====
-st.title("Premium Tracker (Google Sheets)")
+st.title("Interim Premium Tracker")
 policies = get_policies()
 
 if not policies:
@@ -157,9 +157,6 @@ else:
 with st.expander("Notes"):
     st.markdown(
         """
-- The schedule represents **12 months starting from the current month** and is labeled by month.
-- For reliability across different month lengths, the app uses true month arithmetic for due dates.
-- Recommended **Due Day** is 1–28.
 - Reminder dates are shown at **7 days prior** to the next due date.
 """
     )
