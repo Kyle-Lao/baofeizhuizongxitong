@@ -1,5 +1,5 @@
 import streamlit as st
-from datetime import date, timedelta  # <-- added timedelta for reminder
+from datetime import date, timedelta  # for 7-day reminder
 import calendar
 from dateutil.relativedelta import relativedelta  # pip install python-dateutil
 
@@ -57,24 +57,23 @@ def _policy_row_display(p):
     reminder_str = reminder_dt.strftime("%Y-%m-%d") if reminder_dt else "—"
     next_amt = f"${amt:,.2f}" if amt else "—"
 
-    # Widen the date column a bit to show both lines
-    col1, col2, col3, col4, col5, col6, col7 = st.columns([2, 1.6, 1.2, 1.2, 1.2, 1, 1])
+    # No "Mode" column anymore
+    col1, col2, col3, col4, col5, col6 = st.columns([2, 1.6, 1.2, 1.2, 1, 1])
     col1.write(f"**{p['policy_number']}** — {p['insured_name']} ({p['carrier']})")
-    col2.write(f"Next Due: {next_due}  \nNext Reminder: {reminder_str}")
+    col2.write(f"Next Due: {next_due}  \nReminder: {reminder_str}")
     col3.write(f"Amount: {next_amt}")
-    col4.write(f"Mode: {p.get('premium_mode') or '—'}")
     tracking = (str(p.get("is_tracking", "1")) == "1")
-    col5.write("Tracking: ✅" if tracking else "Tracking: ⛔️")
+    col4.write("Tracking: ✅" if tracking else "Tracking: ⛔️")
 
     # Toggle tracking
-    with col6:
+    with col5:
         toggle_label = "Disable" if tracking else "Enable"
         if st.button(toggle_label, key=f"toggle_{p['policy_number']}"):
             update_policy_tracking(p["policy_number"], not tracking)
             st.rerun()
 
     # Delete
-    with col7:
+    with col6:
         if st.button("Delete", key=f"delete_{p['policy_number']}"):
             delete_policy(p["policy_number"])
             st.rerun()
@@ -90,11 +89,6 @@ with st.sidebar.form("add_policy_form", clear_on_submit=False):
     insured_name = st.text_input("Insured Name")
     policy_number = st.text_input("Policy Number")
     carrier = st.text_input("Carrier")
-    premium_mode = st.selectbox(
-        "Premium Mode (UI only, schedule is 12 months)",
-        ["Monthly", "Quarterly", "Semi-Annually", "Annually"],
-        index=0,
-    )
     due_day = st.number_input("Due Day (1–28 recommended)", min_value=1, max_value=31, value=15, step=1)
 
     st.write("**Monthly Premiums for the next 12 months (starting this month)**")
@@ -130,7 +124,7 @@ with st.sidebar.form("add_policy_form", clear_on_submit=False):
             insured_name=insured_name,
             policy_number=policy_number,
             carrier=carrier,
-            premium_mode=premium_mode,
+            premium_mode="Monthly",  # default; column kept for sheet compatibility
             premium_schedule=schedule,
             wire_reference=wire_reference,
             wiring_instructions=wiring_instructions,
@@ -158,9 +152,6 @@ else:
 with st.expander("Notes"):
     st.markdown(
         """
-- The schedule represents **12 months starting from the current month**.
-- For reliability across different month lengths, the app uses true month arithmetic for due dates.
-- Recommended **Due Day** is 1–28.
 - Reminder dates are shown at **7 days prior** to the next due date.
 """
     )
