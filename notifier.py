@@ -79,7 +79,7 @@ Insured Name: {p['insured_name']}
 Carrier: {p['carrier']}
 
 Due Date: {due.strftime('%B %d, %Y')}
-Premium Amount: ${amt:,.2f}
+Amount: ${amt:,.2f}
 
 Wiring Instructions:
 {p.get('wiring_instructions') or ''}
