@@ -60,7 +60,7 @@ def _policy_row_display(p):
     # No "Mode" column anymore
     col1, col2, col3, col4, col5, col6 = st.columns([2, 1.6, 1.2, 1.2, 1, 1])
     col1.write(f"**{p['policy_number']}** — {p['insured_name']} ({p['carrier']})")
-    col2.write(f"Next Due: {next_due}  \nReminder: {reminder_str}")
+    col2.write(f"Next Due: {next_due}  \nNext Reminder: {reminder_str}")
     col3.write(f"Amount: {next_amt}")
     tracking = (str(p.get("is_tracking", "1")) == "1")
     col4.write("Tracking: ✅" if tracking else "Tracking: ⛔️")
